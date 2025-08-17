@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>三角符文存档读取器</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #FFFFFF;
+            color: #000000;
+            margin: 0;
+            padding: 10px;
+            line-height: 1.4;
+        }
+        pre {
+            white-space: pre-wrap;
+            margin: 0;
+        }
+        #container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        #fileInput {
+            margin: 10px 0;
+        }
+        .section {
+            margin: 15px 0;
+            border-top: 1px dashed #333;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <pre>
+╔══╗─╔═══╗╔╗──╔════╗╔══╗╔═══╗╔╗╔╗╔╗─╔╗╔═══╗
+║╔╗╚╗║╔══╝║║──╚═╗╔═╝║╔╗║║╔═╗║║║║║║╚═╝║║╔══╝
+║║╚╗║║╚══╗║║────║║──║╚╝║║╚═╝║║║║║║╔╗─║║╚══╗
+║║─║║║╔══╝║║────║║──║╔╗║║╔╗╔╝║║║║║║╚╗║║╔══╝
+║╚═╝║║╚══╗║╚═╗──║║──║║║║║║║║─║╚╝║║║─║║║╚══╗
+╚═══╝╚═══╝╚══╝──╚╝──╚╝╚╝╚╝╚╝─╚══╝╚╝─╚╝╚═══╝
+                                    V1.0 Beta
+        </pre>
+        
+        <pre>上传存档文件 (filech1_X, filech2_X, filech3_X, filech4_X)：</pre>
+        <input type="file" id="fileInput">
+        
+        <pre id="result">
+--------------------------------------------------
+存档解析结果将显示在这里
+--------------------------------------------------
+        </pre>
+    </div>
+
+<script>
+// 映射定义
+const itemMap = {
+    0: "空", 1: "黑暗糖果", 2: "复活薄荷", 3: "发光碎片", 4: "手册", 5: "坏掉的蛋糕", 
+    6: "顶尖蛋糕", 7: "旋转蛋糕", 8: "黑暗汉堡", 9: "Lancer饼干", 10: "巨大沙拉", 
+    11: "梅花三明治", 12: "红心甜甜圈", 13: "方钻巧克力", 14: "赞明治", 15: "Rouxls油酱面",
+    16: "CD面包圈", 17: "假人模特", 18: "变质的茶", 19: "变质的茶2", 20: "变质的茶3", 
+    21: "变质的茶4", 22: "双黑堡", 23: "光明糖果", 24: "管汁", 25: "代码意面", 
+    26: "Java饼干", 27: "紧迫一点", 28: "紧迫宝石", 29: "紧迫满点", 30: "复活粉", 
+    31: "复活片", 32: "S.毒药", 33: "狗币", 34: "电视餐", 35: "Pipis", 36: "跑气的汽水", 
+    37: "电视糊糊", 38: "精英自助餐", 39: "高档餐", 60: "远古甜点", 61: "狂想茶", 
+    62: "绯红灵药", 63: "苦涩眼泪"
+};
+
+const keyItemMap = {
+    0: "空", 1: "手机", 2: "蛋", 3: "坏掉的蛋糕", 4: "钥匙碎片A", 5: "门的钥匙", 
+    6: "钥匙碎片B", 7: "钥匙碎片C", 8: "Lancer", 9: "Rouxls Kaard", 10: "空磁盘", 
+    11: "数据盘", 12: "密钥生成器", 13: "暗影水晶", 14: "Starwalker", 15: "纯净水晶", 
+    16: "古怪手柄", 17: "后台通行证", 18: "旅行票", 19: "Lancer手柄", 30: "乐谱", 
+    31: "爬爬爪"
+};
+
+const weaponMap = {
+    0: "空", 1: "木剑", 2: "X斧", 3: "红围巾", 4: "大家武器", 5: "骇人的剑", 
+    6: "勇气之斧", 7: "恶魔飞刀", 8: "Trefoil", 9: "劈巾", 10: "精致围巾", 
+    11: "扭曲之剑", 12: "雪花指环", 13: "荆棘指环", 14: "弹弹剑", 15: "啦啦队围巾", 
+    16: "机甲重剑", 17: "自动斧", 18: "纤维围巾", 19: "2级劈巾", 20: "断掉的剑", 
+    21: "木偶围巾", 22: "冰冻指环", 23: "军刀10", 24: "剧毒斧", 25: "弹性围巾", 
+    26: "黑暗碎片"
+};
+
+const armorMap = {
+    0: "空", 1: "琥珀卡片", 2: "骰子手链", 3: "粉色缎带", 4: "白色缎带", 5: "铁制镣铐", 
+    6: "鼠币", 7: "Jevil的尾巴", 8: "白银卡片", 9: "成对缎带", 10: "彩灯手链", 
+    11: "锁链甲", 12: "大人物领结", 13: "尖刺腕带", 14: "银色腕带", 15: "紧迫领带", 
+    16: "假人模特", 17: "黑金手环", 18: "苍穹斗篷", 19: "尖刺镣铐", 20: "残破领结", 
+    21: "成交神器", 22: "皇室胸针", 23: "暗影斗篷", 24: "磁石", 25: "姜饼护盾", 
+    26: "蓝色缎带", 27: "Tenna领带"
+};
+
+document.getElementById('fileInput').addEventListener('change', readFile);
+
+function readFile() {
+    const fileInput = document.getElementById('fileInput');
+    const resultElement = document.getElementById('result');
+    
+    if (fileInput.files.length === 0) {
+        resultElement.textContent = "请选择存档文件";
+        return;
+    }
+    
+    const file = fileInput.files[0];
+    const fileName = file.name;
+    
+    // 确定章节
+    let chapter = "1";
+    if (fileName.startsWith("filech1_")) {
+        chapter = "1";
+    } else if (fileName.startsWith("filech2_")) {
+        chapter = "2";
+    } else if (fileName.startsWith("filech3_")) {
+        chapter = "3";
+    } else if (fileName.startsWith("filech4_")) {
+        chapter = "4";
+    } else {
+        resultElement.textContent = "错误：文件名格式不正确";
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const content = e.target.result;
+        const lines = content.split(/\r?\n/); // 兼容不同换行符
+        const result = parseSaveFile(lines, chapter, fileName);
+        resultElement.innerHTML = result;
+    };
+    reader.readAsText(file);
+}
+
+function parseSaveFile(lines, chapter, fileName) {
+    let result = "";
+    
+    // 判断是否使用星号行号（第一章不使用，其他章节使用）
+    const useStarred = chapter !== "1";
+    
+    // 解析函数 - 处理科学计数法
+    function parseValue(value) {
+        // 先去除空白字符
+        value = (value || "").trim();
+        if (!value) return "0";
+        
+        if (value.includes('e') || value.includes('E')) {
+            // 转换为数字，然后转回字符串，避免科学计数法
+            return Number(value).toString();
+        }
+        return value;
+    }
+    
+    // 解析队伍成员
+    function parseTeamMember(value) {
+        value = (value || "").trim();
+        switch(value) {
+            case "1": return "Kris";
+            case "2": return "Susie";
+            case "3": return "Ralsei";
+            default: return "未知角色";
+        }
+    }
+    
+    // 获取映射名称
+    function getMappedName(value, map) {
+        const num = parseInt(value || "0", 10);
+        return map[num] || `未知物品(${num})`;
+    }
+    
+    try {
+        // 基础信息
+        const playerName = (lines[0] || "").trim() || "未知";
+        const vesselName = (lines[1] || "").trim() || "未知";
+        const teamMember1 = parseTeamMember(lines[7]);
+        const teamMember2 = parseTeamMember(lines[8]);
+        const teamMember3 = parseTeamMember(lines[9]);
+        const darkDollars = parseValue(lines[10] || "0");
+        
+        // 角色属性解析
+        function parseCharacter(lines, baseLine, starredBaseLine, useStarred) {
+            const base = useStarred ? starredBaseLine : baseLine;
+            // 确保行存在，不存在则用0
+            return {
+                currHP: parseValue(lines[base] || "0"),
+                maxHP: parseValue(lines[base+1] || "0"),
+                attack: parseValue(lines[base+2] || "0"),
+                defense: parseValue(lines[base+3] || "0"),
+                magic: parseValue(lines[base+4] || "0")
+            };
+        }
+        
+        // Kris属性
+        const kris = parseCharacter(lines, 70, 78, useStarred);
+        // Susie属性
+        const susie = parseCharacter(lines, 124, 140, useStarred);
+        // Ralsei属性
+        const ralsei = parseCharacter(lines, 178, 202, useStarred);
+        // Noelle属性（仅限其他章节）
+        let noelle = null;
+        if (useStarred) {
+            noelle = {
+                currHP: parseValue(lines[264] || "0"),
+                maxHP: parseValue(lines[265] || "0"),
+                attack: parseValue(lines[266] || "0"),
+                defense: parseValue(lines[267] || "0"),
+                magic: parseValue(lines[268] || "0")
+            };
+        }
+        
+        // 房间号（倒数第二行）
+        const room = (lines[lines.length - 2] || "").trim() || "未知";
+        
+        // 解析物品栏
+        function parseInventory() {
+            let invResult = "";
+            
+            if (useStarred) {
+                // 其他章节 - 物品栏
+                invResult += "物品栏:\n";
+                for (let i = 0; i < 12; i++) {
+                    const lineNum = 329 + i*2;
+                    const value = parseValue(lines[lineNum] || "0");
+                    if (value !== "0") {
+                        invResult += `  栏位${i+1}: ${getMappedName(value, itemMap)}\n`;
+                    }
+                }
+                
+                // 重要物品
+                invResult += "\n重要物品:\n";
+                for (let i = 0; i < 12; i++) {
+                    const lineNum = 330 + i*2;
+                    const value = parseValue(lines[lineNum] || "0");
+                    if (value !== "0") {
+                        invResult += `  栏位${i+1}: ${getMappedName(value, keyItemMap)}\n`;
+                    }
+                }
+                
+                // 武器
+                invResult += "\n武器:\n";
+                for (let i = 0; i < 37; i++) {
+                    const lineNum = 355 + i*2;
+                    const value = parseValue(lines[lineNum] || "0");
+                    if (value !== "0") {
+                        invResult += `  栏位${i+1}: ${getMappedName(value, weaponMap)}\n`;
+                    }
+                }
+                
+                // 防具
+                invResult += "\n防具:\n";
+                for (let i = 0; i < 37; i++) {
+                    const lineNum = 356 + i*2;
+                    const value = parseValue(lines[lineNum] || "0");
+                    if (value !== "0") {
+                        invResult += `  栏位${i+1}: ${getMappedName(value, armorMap)}\n`;
+                    }
+                }
+            } else {
+                // 第一章 - 物品栏
+                invResult += "物品栏:\n";
+                for (let i = 0; i < 11; i++) {
+                    const baseLine = 235 + i*4;
+                    const itemValue = parseValue(lines[baseLine] || "0");
+                    const keyItemValue = parseValue(lines[baseLine+1] || "0");
+                    const weaponValue = parseValue(lines[baseLine+2] || "0");
+                    const armorValue = parseValue(lines[baseLine+3] || "0");
+                    
+                    if (itemValue !== "0" || keyItemValue !== "0" || 
+                        weaponValue !== "0" || armorValue !== "0") {
+                        invResult += `  栏位${i+1}:\n`;
+                        if (itemValue !== "0") invResult += `      物品: ${getMappedName(itemValue, itemMap)}\n`;
+                        if (keyItemValue !== "0") invResult += `      重要物品: ${getMappedName(keyItemValue, keyItemMap)}\n`;
+                        if (weaponValue !== "0") invResult += `      武器: ${getMappedName(weaponValue, weaponMap)}\n`;
+                        if (armorValue !== "0") invResult += `      防具: ${getMappedName(armorValue, armorMap)}\n`;
+                    }
+                }
+            }
+            
+            return invResult;
+        }
+        
+        const inventory = parseInventory();
+        
+        // 构建结果字符串
+        result += `存档文件: ${fileName}\n`;
+        result += `章节: ${chapter}\n`;
+        result += `玩家名称: ${playerName}\n`;
+        result += `容器名称: ${vesselName}\n`;
+        result += `队伍成员: ${teamMember1}, ${teamMember2}, ${teamMember3}\n`;
+        result += `暗世界金钱: ${darkDollars}\n`;
+        result += "--------------------------------------------------\n";
+        result += `Kris - HP: ${kris.currHP}/${kris.maxHP}  AT: ${kris.attack}  DF: ${kris.defense}  MG: ${kris.magic}\n`;
+        result += `Susie - HP: ${susie.currHP}/${susie.maxHP}  AT: ${susie.attack}  DF: ${susie.defense}  MG: ${susie.magic}\n`;
+        result += `Ralsei - HP: ${ralsei.currHP}/${ralsei.maxHP}  AT: ${ralsei.attack}  DF: ${ralsei.defense}  MG: ${ralsei.magic}\n`;
+        
+        if (noelle) {
+            result += `Noelle - HP: ${noelle.currHP}/${noelle.maxHP}  AT: ${noelle.attack}  DF: ${noelle.defense}  MG: ${noelle.magic}\n`;
+        }
+        
+        result += "--------------------------------------------------\n";
+        result += inventory;
+        result += "--------------------------------------------------\n";
+        result += `房间号: ${room}\n`;
+        
+    } catch (e) {
+        result = `解析存档时出错: ${e.message}`;
+    }
+    
+    return result;
+}
+</script>
+</body>
+</html>
+
+
+<!--
+╔══╗╔══╗╔══╗╔══╗╔══╗─╔╗╔══╗╔╗─╔╗╔════╗
+╚═╗║║╔╗║╚═╗║║╔═╝║╔╗║╔╝║╚═╗║║╚═╝║╚═╗╔═╝
+╔═╝║║║║║╔═╝║║╚═╗║╚╝║╚╗║──║║║╔╗─║──║║──
+║╔═╝║║║║║╔═╝╚═╗║║╔╗║─║║──║║║║╚╗║──║║──
+║╚═╗║╚╝║║╚═╗╔═╝║║╚╝║─║║──║║║║─║║──║║──
+╚══╝╚══╝╚══╝╚══╝╚══╝─╚╝──╚╝╚╝─╚╝──╚╝──
+
+╔══╗─╔═══╗╔═══╗╔═══╗╔══╗╔═══╗╔═══╗╔╗╔══╗
+║╔╗╚╗║╔══╝║╔══╝║╔═╗║║╔═╝║╔══╝║╔══╝║║║╔═╝
+║║╚╗║║╚══╗║╚══╗║╚═╝║║╚═╗║╚══╗║╚══╗║╚╝║──
+║║─║║║╔══╝║╔══╝║╔══╝╚═╗║║╔══╝║╔══╝║╔╗║──
+║╚═╝║║╚══╗║╚══╗║║───╔═╝║║╚══╗║╚══╗║║║╚═╗
+╚═══╝╚═══╝╚═══╝╚╝───╚══╝╚═══╝╚═══╝╚╝╚══╝
+V1.0(beta)
+-->
+
+
+
+
